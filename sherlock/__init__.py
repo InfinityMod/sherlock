@@ -35,14 +35,11 @@ Features
 
 * API similar to standard library's `threading.Lock`.
 * Support for With statement, to cleanly acquire and release locks.
-* Backend agnostic: supports `Redis`_, `Memcached`_ and `Etcd`_ as choice of
-  backends.
+* Backend specific: supports `Redis`_ backend only.
 * Extendable: can be easily extended to work with any other of backend of
   choice by extending base lock class. Read :ref:`extending`.
 
 .. _Redis: http://redis.io
-.. _Memcached: http://memcached.org
-.. _Etcd: http://github.com/coreos/etcd
 
 Supported Backends and Client Libraries
 +++++++++++++++++++++++++++++++++++++++
@@ -50,12 +47,8 @@ Supported Backends and Client Libraries
 Following client libraries are supported for every supported backend:
 
 * Redis: `redis-py`_
-* Memcached: `pylibmc`_
-* Etcd: `python-etcd`_
 
 .. _redis-py: http://github.com
-.. _pylibmc: http://github.com
-.. _python-etcd: https://github.com/jplana/python-etcd
 
 As of now, only the above mentioned libraries are supported. Although
 :mod:`sherlock` takes custom client objects so that you can easily provide
@@ -97,7 +90,7 @@ conform to standard library's :mod:`threading.Lock` APIs.
 
     # Note: configuring sherlock to use a backend does not limit you
     # another backend at the same time. You can import backend specific locks
-    # like RedisLock, MCLock and EtcdLock and use them just the same way you
+    # like RedisLock and use them just the same way you
     # use a generic lock (see below). In fact, the generic Lock provided by
     # sherlock is just a proxy that uses these specific locks under the hood.
 
@@ -146,7 +139,7 @@ Using two backends at the same time
 
 Configuring :mod:`sherlock` to use a backend does not limit you from using
 another backend at the same time. You can import backend specific locks like
-RedisLock, MCLock and EtcdLock and use them just the same way you use a generic
+RedisLock and use them just the same way you use a generic
 lock (see below). In fact, the generic Lock provided by :mod:`sherlock` is just
 a proxy that uses these specific locks under the hood.
 
@@ -161,11 +154,6 @@ a proxy that uses these specific locks under the hood.
     # Acquire a lock called my_lock, this lock uses Redis
     lock = Lock('my_lock')
 
-    # Now acquire locks in Memcached
-    from sherlock import MCLock
-    mclock = MCLock('my_mc_lock')
-    mclock.acquire()
-
 Tests
 -----
 
@@ -174,17 +162,8 @@ the databases are running. Make sure all the services are running:
 
 .. code:: bash
 
-    # memcached
-    memcached
-
     # redis-server
     redis-server
-
-    # etcd (etcd is probably not available as package, here is the simplest way
-    # to run it).
-    wget https://github.com/coreos/etcd/releases/download/<version>/etcd-<version>-<platform>.tar.gz
-    tar -zxvf etcd-<version>-<platform>.gz
-    ./etcd-<version>-<platform>/etcd
 
 Run tests like so:
 
@@ -227,8 +206,6 @@ Distributed Locking in Other Languages
 * NodeJS - https://github.com/thedeveloper/warlock
 '''
 
-import etcd
-import pylibmc
 import redis
 
 
@@ -245,31 +222,9 @@ class _Backends(object):
         'default_args': (),
         'default_kwargs': {},
     }
-    ETCD = {
-        'name': 'ETCD',
-        'library': 'etcd',
-        'client_class': etcd.Client,
-        'lock_class': 'EtcdLock',
-        'default_args': (),
-        'default_kwargs': {},
-    }
-    MEMCACHED = {
-        'name': 'MEMCACHED',
-        'library': 'pylibmc',
-        'client_class': pylibmc.Client,
-        'lock_class': 'MCLock',
-        'default_args': (
-            ['localhost'],
-        ),
-        'default_kwargs': {
-            'binary': True,
-        },
-    }
 
     _valid_backends = (
         REDIS,
-        ETCD,
-        MEMCACHED,
     )
 
     def register(self, name, lock_class, library, client_class,
@@ -460,9 +415,7 @@ class _Configuration(object):
             if self._client is None:
                 raise ValueError('The provided object is not a valid client'
                                  'object. Client objects can only be '
-                                 'instances of redis library\'s client class, '
-                                 'python-etcd library\'s client class or '
-                                 'pylibmc library\'s client class.')
+                                 'instances of redis library\'s client class.')
 
     def update(self, **kwargs):
         '''
