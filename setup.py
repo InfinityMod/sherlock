@@ -15,7 +15,7 @@ for file_ in ('README.rst', 'CHANGELOG.rst'):
         description += f.read() + '\n\n'
 
 setup(
-    name='sherlock',
+    name='redisSherlock',
     version=__version__,
     author='Vaidik Kapoor',
     author_email='kapoor.vaidik@gmail.com',
